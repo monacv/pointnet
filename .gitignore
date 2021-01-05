@@ -1,0 +1,13 @@
+PartAnnotation/
+__pycache__/
+data/
+hdf5_data/
+indoor3d_sem_seg_hdf5_data.zip
+indoor3d_sem_seg_hdf5_data/
+log/
+modelnet40_ply_hdf5_2048.zip
+models/__pycache__/
+shapenet_part_seg_hdf5_data.zip
+shapenetcore_partanno_v0.zip
+utils/__pycache__/
+!**/__pycache__/
