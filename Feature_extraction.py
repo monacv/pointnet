@@ -2,11 +2,14 @@ import argparse
 import math
 import h5py
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import socket
 import importlib
 import os
 import sys
+import pdb 
 #import cPickle as pickle
 import pickle
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +28,9 @@ FLAGS = parser.parse_args()
 
 
 NUM_POINT = FLAGS.num_point
-GPU_INDEX = FLAGS.gpu
+#GPU_INDEX = FLAGS.gpu
+GPU_INDEX = 1
+print("GPU_INDEX: ", GPU_INDEX)
 MODEL_PATH = FLAGS.model_path
 BATCH_SIZE = 1
 MODEL = importlib.import_module(FLAGS.model) # import network module
@@ -35,12 +40,18 @@ MAX_NUM_POINT = 1228
 NUM_CLASSES = 600
 
 HOSTNAME = socket.gethostname()
+print('HOSTNAME: ', HOSTNAME)
 
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 def evaluate():
-    with tf.device('/gpu:'+str(GPU_INDEX)):
+    #with tf.device('/gpu:'+str(GPU_INDEX)):
+    with tf.device('/device:gpu:1'):
+    #with tf.device('/device:cpu:0'):
         pointclouds_pl = MODEL.placeholder_inputs(BATCH_SIZE, NUM_POINT)
         is_training_pl = tf.placeholder(tf.bool, shape=())
+
 
         # simple model
         feat = MODEL.get_model(pointclouds_pl, is_training_pl)
@@ -70,16 +81,18 @@ def eval_one_epoch(sess, ops):
     input_list = None
     with open(FLAGS.input_list, 'r') as f:
         input_list = f.readlines()
-    
-    for fn in range(len(input_list)):
-        current_data = pickle.load(open(fn, 'rb'))
+    #pdb.set_trace()
+    #for fn in range(len(input_list)):
+    for fn in input_list:
+        modified_fn = os.path.join('..', fn.strip())
+        current_data = pickle.load(open(modified_fn, 'rb'))
         current_data = current_data[None, :NUM_POINT, :]
-        
-            
         feed_dict = {ops['pointclouds_pl']: current_data,
                      ops['is_training_pl']: is_training}
         feat = sess.run([ops['feat']], feed_dict=feed_dict)
-        pickle.dump(feat, open(fn[:-4] + '_feature.pkl', 'wb'))
+        #pickle.dump(feat, open(fn[:-4] + '_feature.pkl', 'wb'))
+        pickle.dump(feat, open(modified_fn[:-4] + '_feature.pkl', 'wb'))
+
 
 with tf.Graph().as_default():
     evaluate()
